@@ -24,6 +24,7 @@ The fictional service it describes is the exercise's, not a real DMG system.
 | `.claude/skills/pr-review/` | Automated first-pass PR review skill |
 | `.claude/skills/docs/` | Documentation authoring skill — picks the type, refuses to invent rationale |
 | `docs/adr/` | Architecture decision records, plus the template |
+| `docs/design/reschedule-v2-hld.md` | High-level design for the exercise's batch rescheduling problem |
 | `.github/workflows/pr-review.yml` | Runs the gates, then the skill, on every PR |
 | `scripts/gates.sh` | The deterministic gates — same script locally and in CI |
 | `pyproject.toml` | Where formatting and lint rules are actually enforced |
@@ -157,6 +158,25 @@ technical reference, explanation — kept separate, because a runbook that expla
 and a reference that teaches serve nobody. ADRs follow Michael Nygard's format,
 with **Alternatives considered** treated as mandatory: without it a record is an
 announcement, not a decision.
+
+## The design document
+
+`docs/design/reschedule-v2-hld.md` is a counter-proposal to the exercise's V2
+design draft — written to demonstrate the `docs` skill's own standards rather than
+just describe them: alternatives considered, costs named, non-goals explicit, and a
+populated open-questions section.
+
+Its organising idea: **idempotency is a property of a boundary, not of a system.**
+The flow has three boundaries — the HTTP edge, the scheduler call, the event bus —
+and each needs its own key and its own dedup store. The draft it replaces names
+none of them while recording idempotency as "handled by the scheduler", which was
+an open question nobody closed and is now an open Sev-3.
+
+It also keeps a **visible correction** in §7 rather than quietly editing it out.
+An earlier version claimed a client could safely resubmit a whole partially-failed
+batch; that was wrong, and why it was wrong is the most instructive thing in the
+section. An ADR or a design doc that never shows its author changing their mind is
+not being maintained.
 
 ## The principles behind the rewrite
 
