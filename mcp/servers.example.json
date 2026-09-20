@@ -1,0 +1,19 @@
+{
+  "_comment": [
+    "MCP servers, as configured in ~/.claude.json under mcpServers.",
+    "Credentials are referenced by environment variable and never inlined.",
+    "Note: ${VAR} is expanded from the environment of the Claude Code process,",
+    "not from an interactive shell. Launching the app from the macOS GUI rather",
+    "than a login shell means the var is unset and the header ships literally,",
+    "which GitHub rejects as 'Authorization header is badly formatted'."
+  ],
+  "mcpServers": {
+    "github": {
+      "type": "http",
+      "url": "https://api.githubcopilot.com/mcp/",
+      "headers": {
+        "Authorization": "Bearer ${GITHUB_PAT}"
+      }
+    }
+  }
+}
