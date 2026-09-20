@@ -15,14 +15,14 @@ Treat every change here as customer-facing.
 ## Commands
 
 ```
-pytest tests/ -x -q              # run before every handoff back to me
+./scripts/gates.sh               # all gates — run this before every handoff
 pytest tests/test_batch.py -x    # single file while iterating
-ruff check services/             # lint — must be clean
-mypy services/rescheduling/      # typecheck — must be clean
+ruff format .                    # fix formatting; never argue about it
 ```
 
-Run all four before telling me a change is done. Don't ask permission to run
-them.
+`scripts/gates.sh` runs formatting, lint, types, tests and diff coverage. It is
+the same script CI runs, so a green run locally means a green run in CI. Run it
+before telling me a change is done — don't ask permission.
 
 ## Repo map
 
@@ -86,6 +86,37 @@ that can't be checked, tell me and we'll delete it.
 - No new dependency without asking me first.
 - Match the conventions of the file you're editing over any general preference.
 
+## What happens when you open a PR
+
+Three gates, in order. Each one exists to keep the next one's attention on
+something only it can judge.
+
+**Gate 0 — deterministic.** Formatting, lint, types, tests, and 100% coverage of
+the lines you changed. No model, no opinions: same input, same answer, every
+time, on every machine. If this is red, nothing else runs. Formatting is settled
+here and is never a review topic — if you think the config is wrong, open a PR
+against `pyproject.toml`.
+
+**Gate 1 — automated first-pass review.** The `pr-review` skill in
+`.claude/skills/pr-review/` runs on every PR and posts inline findings labelled
+`BLOCK`, `ASK` or `NIT`. It reviews what a tool cannot: SOLID shape, clean-code
+thresholds, whether a test would actually fail if the behaviour broke, and
+whether the diff trips any of the sharp edges above. It is capped at 8 findings —
+if it has more, it names the pattern once instead of enumerating.
+
+**It cannot approve and it cannot merge.** That is deliberate and it is not a
+temporary limitation.
+
+**Gate 2 — a human.** A human reviews last and is the only approver. By the time
+they open the diff, mechanics are settled and the obvious defects are already
+annotated, so their attention goes to the things that actually need a person:
+is this the right change, does it fit where we're going, and what will it cost us
+in six months.
+
+Address the automated findings before asking for human review. Push back on any
+you disagree with — a wrong `BLOCK` is a bug in the skill, and telling me is how
+it gets fixed.
+
 ## Permission boundary
 
 **Run freely, no need to ask:** tests, `ruff`, `mypy`, reads of any kind, git
@@ -113,12 +144,14 @@ in the loop specifically to get an opinion that isn't mine.
 
 ## Definition of done
 
-1. Tests pass, lint clean, typecheck clean.
-2. A test exists that fails if the change is reverted.
+1. `./scripts/gates.sh` is green — including 100% coverage of changed lines.
+2. A test exists that **fails if the change is reverted**. Coverage says a line
+   ran; this says the test is worth having.
 3. New code paths have a log line and a counter.
 4. Timeouts set on every outbound call.
 5. If it can be retried, it dedups.
-6. You've told me what you *didn't* do and why.
+6. Automated review findings are addressed or answered.
+7. You've told me what you *didn't* do and why.
 
 ---
 

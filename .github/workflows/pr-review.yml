@@ -1,0 +1,70 @@
+name: PR Review
+
+# Automation mode: a `prompt` input means Claude runs on the event itself,
+# with no @claude mention needed. Fires on open, on every push to the branch,
+# on reopen, and when a draft is marked ready.
+on:
+  pull_request:
+    types: [opened, synchronize, ready_for_review, reopened]
+
+# A force-push supersedes the previous run. Cancel it rather than paying twice.
+concurrency:
+  group: pr-review-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # Gate 0 — deterministic. Formatting, lint, types, tests, diff coverage.
+  # No model involved: these answers must be identical on every run and on
+  # every developer's machine. Runs the same script engineers run locally.
+  # ---------------------------------------------------------------------------
+  gates:
+    name: Gates (format, lint, types, coverage)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0   # diff coverage needs history to compare against base
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install tooling
+        run: pip install --quiet ruff mypy pytest pytest-cov diff-cover
+
+      - name: Run gates
+        run: ./scripts/gates.sh
+        env:
+          BASE_REF: origin/${{ github.event.pull_request.base.ref }}
+
+  # ---------------------------------------------------------------------------
+  # Gate 1 — judgement. SOLID, clean code, test quality, repo sharp edges.
+  # Only runs once the gates are green: there is nothing worth reviewing in a
+  # diff that doesn't lint, and it keeps model spend off broken branches.
+  # Advisory only. It cannot approve and cannot merge.
+  # ---------------------------------------------------------------------------
+  review:
+    name: Claude first-pass review
+    needs: gates
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      pull-requests: read
+      issues: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 1   # skill files must be on the runner
+
+      - uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          prompt: "/pr-review"
+          claude_args: |
+            --model claude-sonnet-5
+            --max-turns 15
+            --allowedTools "mcp__github_inline_comment__create_inline_comment"

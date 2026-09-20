@@ -1,0 +1,67 @@
+# Enforcement lives here, not in prose. A rule written in a style guide is a
+# suggestion; a rule written in tool config is a gate. One config, committed,
+# applied identically on every machine and in CI — that is how a team gets one
+# format rather than one format per engineer.
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = [
+  "E", "W",    # pycodestyle
+  "F",         # pyflakes — catches the undefined name that PR #1842 shipped
+  "I",         # isort — import order stops being a review topic
+  "N",         # pep8-naming
+  "UP",        # pyupgrade
+  "B",         # bugbear — mutable defaults, bare except
+  "C4",        # comprehensions
+  "SIM",       # simplify
+  "ASYNC",     # blocking calls inside async def
+  "S",         # bandit — hardcoded secrets, weak crypto
+  "T20",       # no stray print()
+  "PT",        # pytest style
+  "RET",       # return/guard-clause hygiene
+  "ARG",       # unused arguments
+  "PTH",       # pathlib over os.path
+  "ERA",       # commented-out code
+  "PL",        # pylint subset — too many args/branches/statements
+  "TRY",       # exception anti-patterns
+]
+ignore = [
+  "S101",      # assert is correct in tests
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["ARG", "PLR2004"]   # fixtures and literal expectations are fine in tests
+
+[tool.ruff.lint.pylint]
+max-args = 5
+max-branches = 10
+max-statements = 50
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+warn_unreachable = true
+disallow_untyped_defs = true
+
+[tool.pytest.ini_options]
+addopts = "-q --strict-markers"
+testpaths = ["tests"]
+
+[tool.coverage.run]
+branch = true
+source = ["services"]
+
+[tool.coverage.report]
+show_missing = true
+# Global floor only — it ratchets upward and never falls. The real gate is
+# 100% coverage of changed lines, enforced by diff-cover in scripts/gates.sh.
+# A global 100% target manufactures tests that execute lines and assert nothing.
+fail_under = 80
+exclude_lines = [
+  "pragma: no cover",
+  "if TYPE_CHECKING:",
+  "raise NotImplementedError",
+]

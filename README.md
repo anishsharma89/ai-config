@@ -17,12 +17,54 @@ The fictional service it describes is the exercise's, not a real DMG system.
 
 ## Contents
 
-| File | What it is |
+| Path | What it is |
 |---|---|
 | `CLAUDE.md` | The rewritten configuration, for Aurora's ReschedulingEngine |
 | `CRITIQUE.md` | What was wrong with the original and why each change was made |
+| `.claude/skills/pr-review/` | Automated first-pass PR review skill |
+| `.github/workflows/pr-review.yml` | Runs the gates, then the skill, on every PR |
+| `scripts/gates.sh` | The deterministic gates — same script locally and in CI |
+| `pyproject.toml` | Where formatting and lint rules are actually enforced |
 | `settings.json` | My actual Claude Code settings |
 | `mcp/servers.example.json` | MCP server setup, credentials referenced by env var |
+
+## The review pipeline
+
+The piece I'd add as an EM. Three gates, each protecting the next one's
+attention:
+
+| | Gate | Owner | Can block merge? |
+|---|---|---|---|
+| 0 | Format, lint, types, tests, 100% diff coverage | Tools | Yes |
+| 1 | SOLID, clean code, test quality, repo sharp edges | `pr-review` skill | No — advisory |
+| 2 | Is this the right change? | A human | Yes — sole approver |
+
+**Formatting is a tool's job, not a reviewer's.** A model commenting on style is
+nondeterministic and will contradict itself between runs. `ruff format` decides,
+`pyproject.toml` is the single source of truth, `scripts/gates.sh` runs the same
+checks on a laptop as in CI, and the review skill is explicitly forbidden from
+raising anything a formatter owns. That gets one format across the whole team,
+which prose in a style guide never does.
+
+**"100% coverage" is scoped to the diff, on purpose.** Every line a PR changes
+must be covered. A global 100% target is the most reliably counterproductive
+metric in testing — it manufactures tests that execute lines and assert nothing,
+and rewards testing getters over testing behaviour. Diff coverage gets the
+discipline without the incentive to game it. Overall coverage ratchets upward and
+never falls.
+
+**Coverage is a floor; the model judges the ceiling.** A percentage tells you a
+line ran. It cannot tell you whether the assertion would fail if the behaviour
+broke — so the skill's primary test-quality check is exactly that question.
+
+**The automated reviewer is bounded to 8 findings.** Past that it names the
+pattern once rather than enumerating. Thirty comments on a PR isn't a quality
+bar, it's a way to make sure none of them get read.
+
+**Nothing automated approves anything.** The skill has no approve capability and
+no merge capability, and that's a design decision rather than a limitation.
+Automation removes the mechanical load so the human review is spent on judgement:
+is this the right change, and what does it cost us in six months.
 
 ## The principles behind the rewrite
 
