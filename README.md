@@ -27,8 +27,60 @@ The fictional service it describes is the exercise's, not a real DMG system.
 | `.github/workflows/pr-review.yml` | Runs the gates, then the skill, on every PR |
 | `scripts/gates.sh` | The deterministic gates — same script locally and in CI |
 | `pyproject.toml` | Where formatting and lint rules are actually enforced |
-| `settings.json` | My actual Claude Code settings |
+| `.claude/settings.json` | **Project settings** — enforced permissions and the format-on-write hook |
+| `user-settings.example.json` | My user-global preferences, kept separate on purpose |
 | `mcp/servers.example.json` | MCP server setup, credentials referenced by env var |
+
+## Three settings layers, three different jobs
+
+Claude Code loads settings in order — **user → project → local** — with later overriding
+earlier. Conflating them is the common mistake, and it's why a repo ends up shipping
+somebody's colour scheme as team policy.
+
+| File | Scope | Committed? | Holds |
+|---|---|---|---|
+| `~/.claude/settings.json` | Me, everywhere | No — mirrored here as `user-settings.example.json` | Model, effort level, theme, TUI. Personal taste. |
+| `.claude/settings.json` | This repo, everyone | **Yes** | Permissions, hooks, env. Team policy. |
+| `.claude/settings.local.json` | This repo, just me | No — gitignored | Personal overrides |
+
+**The permission boundary in `CLAUDE.md` is prose; this is the enforced version.** The
+config's never-list only works if the harness stops it, so the same boundary appears
+twice on purpose: written down so a reader understands the intent, and encoded in
+`permissions.deny` so it doesn't depend on the model choosing to comply.
+
+| Tier | Contents |
+|---|---|
+| `allow` | The gates script, `pytest`, `ruff`, `mypy`, read-only git. No prompt — friction here just trains people to stop reading prompts. |
+| `ask` | `git push`, and edits to `pyproject.toml`, the workflows, this settings file, and `docs/adr/**`. Each one changes the rules rather than the code. |
+| `deny` | Deploys, migrations, force-push, `git reset --hard`, `kubectl`, `terraform apply`, plus reads of `.env`, `*.pem` and private keys. |
+
+Two deliberate details:
+
+**`docs/adr/**` is on the `ask` list** because the `docs` skill is instructed never to
+invent a rationale. An ADR is human-authored by policy, so an agent editing one should
+require a human to say yes first. The rule and the prose agree.
+
+**Reads of `.env` and key material are denied, not just writes.** A secret the model
+reads is a secret in the transcript.
+
+**Honest limitation:** `Bash(...)` deny rules are a guardrail against accident and
+autopilot, not a security boundary — a determined process can route around them with
+`bash -c`. They stop the 3am mistake, which is what they're for. Real isolation is what
+sandboxing and CI credentials are for, not a permissions list.
+
+## Format on write, not on review
+
+The one hook in the project settings runs `ruff format` plus `ruff check --fix-only` on
+every `.py` file Claude writes or edits:
+
+```
+PostToolUse → Write|Edit → format the file that just changed
+```
+
+That's what makes "formatting is never a review topic" literally true rather than
+aspirational. It's fixed at the moment of writing, before the gates see it and long
+before a human does. The command degrades to a no-op when `ruff` isn't installed or the
+file isn't Python, so it can never fail a session.
 
 ## The review pipeline
 

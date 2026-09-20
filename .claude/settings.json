@@ -1,0 +1,65 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+
+  "permissions": {
+    "allow": [
+      "Read",
+      "Bash(./scripts/gates.sh)",
+      "Bash(pytest *)",
+      "Bash(ruff *)",
+      "Bash(mypy *)",
+      "Bash(diff-cover *)",
+      "Bash(git status *)",
+      "Bash(git diff *)",
+      "Bash(git log *)",
+      "Bash(git branch *)",
+      "Bash(git switch -c *)"
+    ],
+
+    "ask": [
+      "Bash(git push *)",
+      "Edit(.github/workflows/**)",
+      "Edit(pyproject.toml)",
+      "Edit(.claude/settings.json)",
+      "Edit(docs/adr/**)"
+    ],
+
+    "deny": [
+      "Bash(./deploy.sh*)",
+      "Bash(alembic upgrade *)",
+      "Bash(alembic downgrade *)",
+      "Bash(git push --force*)",
+      "Bash(git push -f *)",
+      "Bash(git reset --hard *)",
+      "Bash(kubectl *)",
+      "Bash(terraform apply*)",
+      "Bash(terraform destroy*)",
+      "Edit(.env)",
+      "Edit(.env.*)",
+      "Read(.env)",
+      "Read(.env.*)",
+      "Read(**/*.pem)",
+      "Read(**/id_rsa*)"
+    ]
+  },
+
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "jq -r '.tool_response.filePath // .tool_input.file_path' | { read -r f; case \"$f\" in *.py) ruff format \"$f\" && ruff check --fix-only \"$f\";; esac; } 2>/dev/null || true",
+            "statusMessage": "Formatting",
+            "timeout": 30
+          }
+        ]
+      }
+    ]
+  },
+
+  "env": {
+    "PYTHONDONTWRITEBYTECODE": "1"
+  }
+}

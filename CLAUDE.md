@@ -144,6 +144,11 @@ it gets fixed.
 
 ## Permission boundary
 
+Encoded in `.claude/settings.json` as well as written here — the prose explains the
+intent, `permissions.deny` enforces it. Where the two disagree, the settings file wins
+and one of them is a bug.
+
+
 **Run freely, no need to ask:** tests, `ruff`, `mypy`, reads of any kind, git
 status/diff/log, creating a branch.
 
