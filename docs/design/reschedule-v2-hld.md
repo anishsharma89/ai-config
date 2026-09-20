@@ -538,7 +538,7 @@ Where it does belong:
 
 | Phase | Work | Exit criteria |
 |---|---|---|
-| **0 · De-risk**<br>1 sprint | Idempotency (B2) and the outbox (B3) on the *existing single-job path*. Close AURORA-1247. Legacy adapter to 0%. Restore the deploy pipeline. | Zero duplicate events for 7 days · legacy traffic at 0% · deploys ≥ 4/week |
+| **0 · De-risk**<br>1 sprint | Idempotency (B2) and the outbox (B3) on the *existing single-job path*. Close AURORA-1247. Legacy adapter to 0%. Restore deploy frequency — cause of the decline to be established first, since the fix differs by cause. | Zero duplicate events for 7 days · legacy traffic at 0% · deploys ≥ 4/week |
 | **1 · Batch**<br>1–2 sprints | Async endpoint, workflow, status endpoint, quotas, authz. One tenant, behind a *customer-scoped* flag. | 1000-job batch p95 < 30s · `dedup_hit_rate` wired · zero stuck attempts |
 | **2 · Widen** | Tenant by tenant. Not by percentage — a new endpoint has no existing traffic for a percentage to mean anything. | Success rate ≥ 99.5% at each step before the next |
 | **3 · Latency** | Profile the eligibility DSL. Set the per-hop budget against measurements. Then optimise. | Single-job p99 < 500ms, or a written explanation of why not |
