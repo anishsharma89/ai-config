@@ -27,13 +27,21 @@ select = [
   "ERA",       # commented-out code
   "PL",        # pylint subset — too many args/branches/statements
   "TRY",       # exception anti-patterns
+  "D",         # pydocstyle — docstring PRESENCE on public symbols
 ]
 ignore = [
   "S101",      # assert is correct in tests
+  "D203",      # incompatible with D211; ruff wants one of them disabled
+  "D213",      # incompatible with D212; summary on the first line
 ]
 
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
 [tool.ruff.lint.per-file-ignores]
-"tests/*" = ["ARG", "PLR2004"]   # fixtures and literal expectations are fine in tests
+# Fixtures and literal expectations are fine in tests, and a test name that
+# needs a docstring to be understood is a badly named test.
+"tests/*" = ["ARG", "PLR2004", "D"]
 
 [tool.ruff.lint.pylint]
 max-args = 5

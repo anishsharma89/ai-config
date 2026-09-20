@@ -86,6 +86,27 @@ that can't be checked, tell me and we'll delete it.
 - No new dependency without asking me first.
 - Match the conventions of the file you're editing over any general preference.
 
+Documentation, written as you write the code — not bolted on afterwards, because
+afterwards the intent is gone:
+
+- Every public function, class and endpoint gets a docstring stating what a
+  caller can rely on: units, what an empty value means, what it raises, and
+  whether it's safe to retry. `ruff` enforces that one exists; you're
+  responsible for it being worth having.
+- If you change a contract, update its docstring **in the same commit**. A
+  docstring describing the old behaviour is worse than none — the reader trusts
+  it and stops asking.
+- New endpoint, queue consumer, or failure mode → a runbook entry. If it can
+  page someone at 3am, it needs one.
+- Made a choice someone would question in six months? That's an ADR. Use
+  `docs/adr/template.md`, and fill in **Alternatives considered** — a record
+  without it is an announcement, not a decision.
+- **Never invent a rationale.** If you don't know why something was decided,
+  write the heading, leave a `<!-- NEEDS AUTHOR -->` marker, and tell me what you
+  need. A plausible guess is a liability; a visible gap is useful.
+- Don't write documentation the change doesn't oblige. Filler makes the whole
+  `docs/` directory untrustworthy, because readers can't tell what's current.
+
 ## What happens when you open a PR
 
 Three gates, in order. Each one exists to keep the next one's attention on
@@ -112,6 +133,10 @@ they open the diff, mechanics are settled and the obvious defects are already
 annotated, so their attention goes to the things that actually need a person:
 is this the right change, does it fit where we're going, and what will it cost us
 in six months.
+
+Documentation findings point at obligations, not prose. If you want help writing
+what's missing, use the `docs` skill — it picks the document type before drafting
+and refuses to invent reasoning it can't verify.
 
 Address the automated findings before asking for human review. Push back on any
 you disagree with — a wrong `BLOCK` is a bug in the skill, and telling me is how
@@ -150,8 +175,11 @@ in the loop specifically to get an opinion that isn't mine.
 3. New code paths have a log line and a counter.
 4. Timeouts set on every outbound call.
 5. If it can be retried, it dedups.
-6. Automated review findings are addressed or answered.
-7. You've told me what you *didn't* do and why.
+6. Docstrings reflect the contract as it is *after* this change, and any runbook
+   or ADR the change obliges exists — with no `NEEDS AUTHOR` markers left
+   unmentioned.
+7. Automated review findings are addressed or answered.
+8. You've told me what you *didn't* do and why.
 
 ---
 

@@ -22,6 +22,8 @@ The fictional service it describes is the exercise's, not a real DMG system.
 | `CLAUDE.md` | The rewritten configuration, for Aurora's ReschedulingEngine |
 | `CRITIQUE.md` | What was wrong with the original and why each change was made |
 | `.claude/skills/pr-review/` | Automated first-pass PR review skill |
+| `.claude/skills/docs/` | Documentation authoring skill — picks the type, refuses to invent rationale |
+| `docs/adr/` | Architecture decision records, plus the template |
 | `.github/workflows/pr-review.yml` | Runs the gates, then the skill, on every PR |
 | `scripts/gates.sh` | The deterministic gates — same script locally and in CI |
 | `pyproject.toml` | Where formatting and lint rules are actually enforced |
@@ -65,6 +67,44 @@ bar, it's a way to make sure none of them get read.
 no merge capability, and that's a design decision rather than a limitation.
 Automation removes the mechanical load so the human review is spent on judgement:
 is this the right change, and what does it cost us in six months.
+
+## Where documentation belongs
+
+"Documentation" isn't one thing, and the reason doc initiatives fail is treating
+it as one. Each kind has a different generator, a different reviewer, and a
+different lifetime — so each gets a different home.
+
+| Kind | Generatable? | Where it's handled |
+|---|---|---|
+| Docstrings / API reference | Shape yes, intent no | Written at authoring time; **presence** gated by `ruff` pydocstyle |
+| ADR — *why* we chose this | **No** — pure human intent | Human writes; the review skill detects the *missing* one |
+| Runbook — how to operate it | Draft yes, verification human | Authoring time, flagged when new operational surface appears |
+| Changelog | Yes, from commits | Automatable |
+| README / architecture | No — detect drift, don't write it | Review skill flags the drift |
+
+**The governing rule: never generate documentation you can't verify.** A wrong
+docstring is worse than a missing one, because the reader trusts it and stops
+asking. Where intent isn't available, the `docs` skill writes the heading, leaves
+a `NEEDS AUTHOR` marker, and says what it needs. A visible gap is useful; a
+plausible guess is a liability.
+
+**Which is why documentation is not auto-committed before a commit.** A hook that
+writes prose into your commit produces text generated from a diff with no access
+to intent — which is to say, restatements of the code. That's the exact
+antipattern `clean-code.md` bans two files over ("comments explain *why*, never
+*what*"). It also means the author never reads it, so drift is guaranteed from
+day one.
+
+**Docs live in the repo, reviewed in the same PR.** Documentation in a wiki has no
+link to the code that invalidates it, so it rots silently. The exercise's own
+package is the worked example: *"idempotency is handled by the scheduler"* sat in
+a team wiki for two months after it stopped being true, and became an incident.
+
+Document types follow [Diátaxis](https://diataxis.fr) — tutorials, how-to guides,
+technical reference, explanation — kept separate, because a runbook that explains
+and a reference that teaches serve nobody. ADRs follow Michael Nygard's format,
+with **Alternatives considered** treated as mandatory: without it a record is an
+announcement, not a decision.
 
 ## The principles behind the rewrite
 

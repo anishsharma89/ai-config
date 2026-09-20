@@ -35,7 +35,7 @@ human's review start at design altitude instead of spending itself on mechanics.
 3. Read the repo's `CLAUDE.md`, especially **Sharp edges**. A finding that cites
    a known sharp edge is worth ten generic ones.
 4. Review in this order, stopping when you hit 8 findings:
-   **correctness → test quality → SOLID → clean code.**
+   **correctness → test quality → documentation → SOLID → clean code.**
 5. Post each finding as an inline comment on the specific line.
 6. Post one summary comment: counts by severity, and the explicit line
    **"First-pass review only — a human review is still required before merge."**
@@ -53,6 +53,9 @@ Use exactly these three labels, in the comment's first line.
 - Credentials, tokens or keys in the diff
 - Missing authorization or tenant scoping on a mutating endpoint
 - N+1: a per-item query or RPC inside a loop over a caller-supplied collection
+- Documentation the diff has just made false — a docstring describing the old
+  contract, a runbook step this change invalidates. A wrong document is worse
+  than a missing one.
 
 **`ASK`** — needs the author's intent before anyone can judge it. Design and
 SOLID findings usually land here: you can see the shape is wrong but not why it
@@ -72,6 +75,9 @@ Load the reference file for the dimension you're working:
   rather than a matter of taste.
 - `references/tdd-and-coverage.md` — how to tell a real test from a line-executor,
   and why diff coverage is the gate rather than a global percentage.
+- `references/documentation.md` — whether the diff created a documentation
+  obligation it didn't discharge. Docstring presence is already a lint gate; do
+  not re-raise it.
 
 ## How to write a finding
 
